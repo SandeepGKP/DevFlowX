@@ -255,11 +255,18 @@ public class PipelineEngine {
 
     private boolean runCommand(String command, File workingDir, Release release, String stage) {
         try {
+            boolean isWindows = System.getProperty("os.name").toLowerCase().startsWith("windows");
             String finalCommand = command;
-            if (command.startsWith("npm")) finalCommand = command.replaceFirst("npm", "npm.cmd");
-            else if (command.startsWith("mvn")) finalCommand = command.replaceFirst("mvn", "mvn.cmd");
+            
+            ProcessBuilder builder;
+            if (isWindows) {
+                if (command.startsWith("npm")) finalCommand = command.replaceFirst("npm", "npm.cmd");
+                else if (command.startsWith("mvn")) finalCommand = command.replaceFirst("mvn", "mvn.cmd");
+                builder = new ProcessBuilder("cmd.exe", "/c", finalCommand);
+            } else {
+                builder = new ProcessBuilder("sh", "-c", finalCommand);
+            }
 
-            ProcessBuilder builder = new ProcessBuilder("cmd.exe", "/c", finalCommand);
             builder.directory(workingDir);
             builder.redirectErrorStream(true);
 
