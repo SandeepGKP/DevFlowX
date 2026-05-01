@@ -37,7 +37,7 @@ export default function Layout() {
         </div>
 
         <nav className="flex-1 mt-4">
-          <SidebarLink to="/" icon={LayoutDashboard} label="Dashboard" active={location.pathname === '/'} />
+          <SidebarLink to="/dashboard" icon={LayoutDashboard} label="Dashboard" active={location.pathname === '/dashboard'} />
           <SidebarLink to="/releases" icon={History} label="Releases" active={location.pathname === '/releases'} />
           <SidebarLink to="/analytics" icon={BarChart3} label="Analytics" active={location.pathname === '/analytics'} />
           <SidebarLink to="/security" icon={ShieldAlert} label="Security Scan" active={location.pathname === '/security'} />
@@ -50,7 +50,7 @@ export default function Layout() {
             </div>
             <div className="flex-1 min-w-0">
                 <p className="text-sm font-bold text-white truncate">{user.name || 'User'}</p>
-                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-tighter truncate">{user.email}</p>
+                <p className="text-[10px] text-slate-500 font-bold tracking-tighter truncate">{user.email}</p>
             </div>
           </div>
           <button 

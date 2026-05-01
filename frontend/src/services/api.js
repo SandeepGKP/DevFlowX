@@ -1,10 +1,12 @@
 import axios from 'axios';
 
+const API_BASE_URL = 'http://localhost:8080/api';
+
 const api = axios.create({
-  baseURL: 'http://localhost:8080/api',
+  baseURL: API_BASE_URL,
 });
 
-// Add JWT to every request
+// Inject JWT token into every request
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
   if (token) {
@@ -14,22 +16,26 @@ api.interceptors.request.use((config) => {
 });
 
 export const authService = {
-  login: (data) => api.post('/auth/login', data),
-  register: (data) => api.post('/auth/register', data),
-  logout: () => localStorage.removeItem('token'),
+  login: (credentials) => api.post('/auth/login', credentials),
+  register: (userData) => api.post('/auth/register', userData),
+  logout: () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+  }
 };
 
 export const releaseService = {
-  getAll: () => api.get('/releases'),
   create: (data) => api.post('/releases', data),
-  rollback: (id) => api.post(`/releases/${id}/rollback`),
-  updateEnvVars: (id, envVars) => api.put(`/releases/${id}/env-vars`, envVars),
+  getAll: () => api.get('/releases'),
+  getById: (id) => api.get(`/releases/${id}`),
   delete: (id) => api.delete(`/releases/${id}`),
+  rollback: (id) => api.post(`/releases/rollback/${id}`),
 };
 
 export const pipelineService = {
+  start: (id) => api.post(`/pipeline/start/${id}`),
   resume: (id, runTests) => api.post(`/pipeline/resume/${id}?runTests=${runTests}`),
-  getLogs: (id) => api.get(`/pipeline-logs/${id}`),
+  getLogs: (id) => api.get(`/pipeline/logs/${id}`),
 };
 
 export const analyticsService = {

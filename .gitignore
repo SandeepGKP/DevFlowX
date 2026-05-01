@@ -1,0 +1,28 @@
+# Node dependencies
+node_modules/
+frontend/node_modules/
+dist/
+
+# Java build files
+target/
+backend/target/
+*.class
+*.jar
+*.war
+
+# IDE files
+.idea/
+.vscode/
+*.iml
+*.log
+
+# DevFlowX Specific (CRITICAL)
+backend/workspaces/
+backend/data/
+workspaces/
+data/
+
+# Secrets
+.env
+application.properties.backup
+secret.key

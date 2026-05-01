@@ -124,11 +124,17 @@ export default function Releases() {
                       <RotateCcw size={14} /> Rollback
                     </button>
                   )}
-                  {release.status === 'DEPLOYED' && (
-                    <div className="flex items-center gap-1 text-emerald-500/60 mr-2">
+                  {release.status === 'DEPLOYED' && release.liveUrl && (
+                    <a 
+                      href={release.liveUrl} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1 text-emerald-400 hover:text-emerald-300 bg-emerald-500/10 hover:bg-emerald-500/20 px-3 py-1.5 rounded-lg transition-colors text-xs font-bold mr-2 border border-emerald-500/20"
+                      title="Launch Live App"
+                    >
                       <Rocket size={14} />
-                      <span className="text-[10px] font-bold uppercase">Live</span>
-                    </div>
+                      <span className="text-[10px] font-bold uppercase">Launch</span>
+                    </a>
                   )}
                   <button 
                     onClick={() => handleDelete(release.id)}

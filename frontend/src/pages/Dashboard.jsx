@@ -4,11 +4,13 @@ import Cards from '../components/Cards';
 import PipelineGraph from '../components/PipelineGraph';
 import LogsTerminal from '../components/LogsTerminal';
 import { releaseService, pipelineService } from '../services/api';
+import SockJS from 'sockjs-client';
+import Stomp from 'stompjs';
 
 export default function Dashboard() {
   const [activeRelease, setActiveRelease] = useState(null);
   const [logs, setLogs] = useState([]);
-  const [stats, setStats] = useState({ active: 0, failed: 0, risks: 0 });
+  const [stats, setStats] = useState({ active: 0, failed: 0, risks: 0, total: 0 });
   const [showDeployForm, setShowDeployForm] = useState(false);
   const [isDeploying, setIsDeploying] = useState(false);
   const [elapsedTime, setElapsedTime] = useState(0);
@@ -46,14 +48,37 @@ export default function Dashboard() {
   }, [activeRelease?.status, activeRelease?.id]);
 
   useEffect(() => {
-    let logInterval;
-    if (activeRelease && !['PENDING', 'DEPLOYED', 'FAILED', 'ROLLBACK'].includes(activeRelease.status)) {
-      logInterval = setInterval(() => fetchLogs(activeRelease.id), 2000);
-    } else if (activeRelease) {
-      fetchLogs(activeRelease.id);
-    }
-    return () => clearInterval(logInterval);
-  }, [activeRelease?.status]);
+    if (!activeRelease?.id) return;
+
+    // Initial fetch for historical logs
+    fetchLogs(activeRelease.id);
+
+    // Only set up WebSocket if the release is actually running or recently finished
+    const socket = new SockJS('http://localhost:8080/ws-logs');
+    const stompClient = Stomp.over(socket);
+    stompClient.debug = null; // Disable noisy console logs
+
+    stompClient.connect({}, () => {
+      stompClient.subscribe(`/topic/logs/${activeRelease.id}`, (message) => {
+        if (message.body) {
+          try {
+            const logObj = JSON.parse(message.body);
+            setLogs(prev => [...prev, logObj]);
+          } catch (e) {
+            console.error("Failed to parse log message:", e);
+          }
+        }
+      });
+    }, (error) => {
+      console.error('WebSocket connection error:', error);
+    });
+
+    return () => {
+      if (stompClient.connected) {
+        stompClient.disconnect();
+      }
+    };
+  }, [activeRelease?.id]);
 
   const fetchReleases = async () => {
     try {
@@ -61,7 +86,7 @@ export default function Dashboard() {
       const releases = res.data;
       const failed = releases.filter(r => r.status === 'FAILED' || r.status === 'ROLLBACK').length;
       const active = releases.filter(r => !['PENDING', 'DEPLOYED', 'FAILED', 'ROLLBACK'].includes(r.status)).length;
-      setStats({ active, failed, risks: 0 });
+      setStats({ active, failed, risks: 0, total: releases.length });
       if (releases.length > 0) {
         const sorted = releases.sort((a, b) => b.id - a.id);
         const inProgress = sorted.find(r => !['PENDING', 'DEPLOYED', 'FAILED', 'ROLLBACK'].includes(r.status));
@@ -184,7 +209,7 @@ export default function Dashboard() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <Cards title="Active Deployments" value={stats.active} subtitle="Currently running" icon={Activity} colorClass="bg-blue-500/20 text-blue-400" />
-        <Cards title="Total Deployments" value="24" subtitle="Last 7 days" icon={Rocket} colorClass="bg-emerald-500/20 text-emerald-400" />
+        <Cards title="Total Deployments" value={stats.total} subtitle="Project lifetime" icon={Rocket} colorClass="bg-emerald-500/20 text-emerald-400" />
         <Cards title="Failed Builds" value={stats.failed} subtitle="Require attention" icon={ServerCrash} colorClass="bg-red-500/20 text-red-400" />
         <Cards title="Security Risks" value={stats.risks} subtitle="High severity" icon={ShieldAlert} colorClass="bg-amber-500/20 text-amber-400" />
       </div>
@@ -213,7 +238,7 @@ export default function Dashboard() {
                       <Clock size={10} className="animate-pulse" /> {formatTime(elapsedTime)}
                    </div>
                 )}
-                {activeRelease.status === 'DEPLOYED' && activeRelease.liveUrl && <a href={activeRelease.liveUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 bg-emerald-500 hover:bg-emerald-400 text-white px-3 py-1 rounded-lg text-xs font-bold transition-colors shadow-lg shadow-emerald-500/20"><Globe size={12} /> View Live App</a>}
+                {activeRelease.status === 'DEPLOYED' && activeRelease.liveUrl && <a href={activeRelease.liveUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 bg-emerald-500 hover:bg-emerald-400 text-white px-3 py-1 rounded-lg text-xs font-bold transition-colors shadow-lg shadow-emerald-500/20"><Rocket size={12} /> Launch App</a>}
                 <span className={`font-semibold px-3 py-1 rounded-full text-xs border ${activeRelease.status === 'DEPLOYED' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' : activeRelease.status === 'FAILED' ? 'bg-red-500/10 text-red-400 border-red-500/30' : 'bg-blue-500/10 text-blue-400 border-blue-500/30 animate-pulse'}`}>{activeRelease.status}</span>
               </div>
             </div>
