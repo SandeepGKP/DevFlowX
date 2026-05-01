@@ -54,7 +54,8 @@ export default function Dashboard() {
     fetchLogs(activeRelease.id);
 
     // Only set up WebSocket if the release is actually running or recently finished
-    const socket = new SockJS('http://localhost:8080/ws-logs');
+    const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
+    const socket = new SockJS(`${apiBaseUrl}/ws-logs`);
     const stompClient = Stomp.over(socket);
     stompClient.debug = null; // Disable noisy console logs
 
