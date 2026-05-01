@@ -286,10 +286,22 @@ public class PipelineEngine {
 
             Map<String, String> env = builder.environment();
             
-            // MEMORY PROTECTION: Limit memory for child processes
-            // Increased to 512MB for local stability; prevents V8 AddressSpace crashes
-            env.put("NODE_OPTIONS", "--max-old-space-size=512");
-            env.put("MAVEN_OPTS", "-Xmx512m -XX:MaxMetaspaceSize=128m");
+            // SMART MEMORY DETECTION: Full power locally, Extreme Squeeze on Render
+            boolean isRender = System.getenv().get("RENDER") != null;
+            String defaultMem = isRender ? "320" : "1024";
+            
+            String nodeMem = System.getenv().getOrDefault("BUILD_MEMORY_LIMIT", defaultMem);
+            String mvnMem = System.getenv().getOrDefault("MAVEN_MEMORY_LIMIT", defaultMem);
+            
+            env.put("NODE_OPTIONS", "--max-old-space-size=" + nodeMem);
+            env.put("MAVEN_OPTS", "-Xmx" + mvnMem + "m -XX:MaxMetaspaceSize=128m");
+            
+            // Speed up builds and save massive RAM by disabling source maps
+            env.put("GENERATE_SOURCEMAP", "false");
+            
+            // Environment optimizations
+            env.put("NODE_ENV", "production");
+            if (isRender) env.put("UV_THREADPOOL_SIZE", "1");
 
             if (release.getEnvironmentVariables() != null) {
                 env.putAll(release.getEnvironmentVariables());

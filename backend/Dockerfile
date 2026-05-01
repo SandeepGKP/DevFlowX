@@ -26,6 +26,6 @@ RUN apt-get update && apt-get install -y curl git maven \
 # Copy only the built JAR from the build stage
 COPY --from=build /app/target/*.jar app.jar
 
-# Expose port and start with memory limits
+# Expose port and start with EXTREME memory limits for Free Tier
 EXPOSE 8080
-ENTRYPOINT ["java", "-Xmx256m", "-Xms128m", "-jar", "app.jar"]
+ENTRYPOINT ["java", "-Xmx160m", "-Xms128m", "-jar", "app.jar"]
