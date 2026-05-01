@@ -27,7 +27,10 @@ public class NotificationService {
         try {
             mailSender.send(message);
         } catch (Exception e) {
-            System.err.println("Failed to send email: " + e.getMessage());
+            // Silencing local mail errors to keep logs clean
+            if (!e.getMessage().contains("Connection refused")) {
+                System.err.println("Notification Alert: " + e.getMessage());
+            }
         }
     }
 }

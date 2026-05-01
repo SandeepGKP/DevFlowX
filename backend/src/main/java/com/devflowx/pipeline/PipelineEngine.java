@@ -281,9 +281,9 @@ public class PipelineEngine {
             Map<String, String> env = builder.environment();
             
             // MEMORY PROTECTION: Limit memory for child processes
-            // This prevents npm/mvn from hogging all system RAM
-            env.put("NODE_OPTIONS", "--max-old-space-size=256");
-            env.put("MAVEN_OPTS", "-Xmx256m -XX:MaxMetaspaceSize=128m");
+            // Increased to 512MB for local stability; prevents V8 AddressSpace crashes
+            env.put("NODE_OPTIONS", "--max-old-space-size=512");
+            env.put("MAVEN_OPTS", "-Xmx512m -XX:MaxMetaspaceSize=128m");
 
             if (release.getEnvironmentVariables() != null) {
                 env.putAll(release.getEnvironmentVariables());
