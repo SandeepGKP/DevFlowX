@@ -1,33 +1,21 @@
-HELP.md
 target/
+*.class
+*.jar
+*.war
+*.ear
+*.log
+
+# DevFlowX Workspaces and Data
+workspaces/
+data/
+data/*
+
+# Local settings
 .mvn/wrapper/maven-wrapper.jar
-!**/src/main/**/target/
-!**/src/test/**/target/
-
-### STS ###
-.apt_generated
-.classpath
-.factorypath
-.project
-.settings
-.springBeans
-.sts4-cache
-
-### IntelliJ IDEA ###
-.idea
-*.iws
+.idea/
 *.iml
-*.ipr
 
-### NetBeans ###
-/nbproject/private/
-/nbbuild/
-/dist/
-/nbdist/
-/.nb-gradle/
-build/
-!**/src/main/**/build/
-!**/src/test/**/build/
-
-### VS Code ###
-.vscode/
+# Sensitive configurations
+application.properties.backup
+.env
+secret.key
