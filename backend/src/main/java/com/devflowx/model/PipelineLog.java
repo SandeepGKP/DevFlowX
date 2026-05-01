@@ -6,7 +6,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Entity
 @Data
@@ -26,10 +26,10 @@ public class PipelineLog {
     @Column(columnDefinition = "TEXT")
     private String message;
     
-    private LocalDateTime timestamp;
+    private Instant timestamp;
 
     @PrePersist
     protected void onCreate() {
-        timestamp = LocalDateTime.now();
+        timestamp = Instant.now();
     }
 }

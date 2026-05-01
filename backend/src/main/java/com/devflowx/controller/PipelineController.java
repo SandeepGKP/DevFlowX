@@ -28,6 +28,12 @@ public class PipelineController {
         return ResponseEntity.ok("Pipeline started successfully.");
     }
 
+    @PostMapping("/stop/{id}")
+    public ResponseEntity<String> stopPipeline(@PathVariable("id") Long id) {
+        pipelineEngine.stopPipeline(id);
+        return ResponseEntity.ok("Pipeline stop signal sent.");
+    }
+
     @GetMapping("/logs/{id}")
     public ResponseEntity<List<PipelineLog>> getLogs(@PathVariable("id") Long id) {
         return ResponseEntity.ok(auditLogService.getLogsByRelease(id));

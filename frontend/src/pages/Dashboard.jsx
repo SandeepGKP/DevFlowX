@@ -134,6 +134,23 @@ export default function Dashboard() {
     } catch (err) { console.error(err); }
   };
 
+  const handleStop = async () => {
+    if (!activeRelease) return;
+    try {
+      await pipelineService.stop(activeRelease.id);
+      fetchReleases();
+    } catch (err) { console.error(err); }
+  };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this deployment and all its files?")) return;
+    try {
+      await releaseService.delete(id);
+      if (activeRelease?.id === id) setActiveRelease(null);
+      fetchReleases();
+    } catch (err) { console.error(err); }
+  };
+
   const addEnvVar = () => setEnvVars([...envVars, { key: '', value: '' }]);
   const removeEnvVar = (index) => setEnvVars(envVars.filter((_, i) => i !== index));
   const updateEnvVar = (index, field, val) => {
@@ -235,11 +252,17 @@ export default function Dashboard() {
                   </div>
                 )}
                 {activeRelease && !['PENDING', 'DEPLOYED', 'FAILED', 'ROLLBACK', 'WAITING_FOR_TEST'].includes(activeRelease.status) && (
-                   <div className="flex items-center gap-1 text-[10px] font-bold text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded border border-blue-500/20 mr-1">
-                      <Clock size={10} className="animate-pulse" /> {formatTime(elapsedTime)}
+                   <div className="flex gap-2 mr-2">
+                      <div className="flex items-center gap-1 text-[10px] font-bold text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded border border-blue-500/20">
+                         <Clock size={10} className="animate-pulse" /> {formatTime(elapsedTime)}
+                      </div>
+                      <button onClick={handleStop} className="bg-red-600/20 hover:bg-red-600/40 text-red-400 px-3 py-1 rounded-lg text-[10px] font-bold transition-all flex items-center gap-1 border border-red-500/30">
+                        <ShieldAlert size={12} /> STOP BUILD
+                      </button>
                    </div>
                 )}
                 {activeRelease.status === 'DEPLOYED' && activeRelease.liveUrl && <a href={activeRelease.liveUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 bg-emerald-500 hover:bg-emerald-400 text-white px-3 py-1 rounded-lg text-xs font-bold transition-colors shadow-lg shadow-emerald-500/20"><Rocket size={12} /> Launch App</a>}
+                <button onClick={() => handleDelete(activeRelease.id)} className="bg-slate-700 hover:bg-red-600 text-slate-400 hover:text-white px-2 py-1 rounded-lg transition-all border border-slate-600 hover:border-red-500" title="Remove Deployment"><Trash2 size={14}/></button>
                 <span className={`font-semibold px-3 py-1 rounded-full text-xs border ${activeRelease.status === 'DEPLOYED' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' : activeRelease.status === 'FAILED' ? 'bg-red-500/10 text-red-400 border-red-500/30' : 'bg-blue-500/10 text-blue-400 border-blue-500/30 animate-pulse'}`}>{activeRelease.status}</span>
               </div>
             </div>

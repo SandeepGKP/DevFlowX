@@ -19,6 +19,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 
 @Service
@@ -30,6 +31,9 @@ public class PipelineEngine {
     private final NotificationService notificationService;
     private final UserRepository userRepository;
     private final String WORKSPACE_BASE = "workspaces";
+    
+    // Tracking active processes for the "Stop" functionality
+    private final Map<Long, Process> activeProcesses = new ConcurrentHashMap<>();
 
     @org.springframework.beans.factory.annotation.Value("${VITE_API_BASE_URL:http://localhost:8080}")
     private String backendUrl;
@@ -279,16 +283,33 @@ public class PipelineEngine {
             }
 
             Process process = builder.start();
+            activeProcesses.put(release.getId(), process);
+            
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
                 String line;
                 while ((line = reader.readLine()) != null) {
                     auditLogService.log(release.getId(), stage, "INFO", line);
                 }
             }
-            return process.waitFor() == 0;
+            boolean success = process.waitFor() == 0;
+            activeProcesses.remove(release.getId());
+            return success;
         } catch (Exception e) {
             auditLogService.log(release.getId(), stage, "ERROR", e.getMessage());
             return false;
+        }
+    }
+
+    public void stopPipeline(Long releaseId) {
+        Process process = activeProcesses.get(releaseId);
+        if (process != null) {
+            process.descendants().forEach(ProcessHandle::destroyForcibly);
+            process.destroyForcibly();
+            activeProcesses.remove(releaseId);
+            
+            releaseRepository.findById(releaseId).ifPresent(release -> {
+                failPipeline(release, "SYSTEM", "Pipeline manually stopped by user.");
+            });
         }
     }
 

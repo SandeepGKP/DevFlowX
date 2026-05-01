@@ -34,6 +34,7 @@ export const releaseService = {
 
 export const pipelineService = {
   start: (id) => api.post(`/pipeline/start/${id}`),
+  stop: (id) => api.post(`/pipeline/stop/${id}`),
   resume: (id, runTests) => api.post(`/pipeline/resume/${id}?runTests=${runTests}`),
   getLogs: (id) => api.get(`/pipeline/logs/${id}`),
 };
