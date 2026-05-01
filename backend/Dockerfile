@@ -1,19 +1,31 @@
-# 1. Use Java 21 as the foundation
-FROM eclipse-temurin:21-jdk-jammy
-
-# 2. Install Git, Maven, and Node.js (Critical for DevFlowX CI/CD features)
-RUN apt-get update && apt-get install -y curl git maven \
-    && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
-    && apt-get install -y nodejs
-
+# 1. Build Stage: Dependency Caching & JAR creation
+FROM eclipse-temurin:21-jdk-jammy AS build
 WORKDIR /app
 
-# 3. Copy the backend code
-COPY . .
+# Copy Maven wrapper and pom.xml first to cache dependencies
+COPY .mvn/ .mvn
+COPY mvnw pom.xml ./
+RUN chmod +x mvnw
+# This layer will be cached unless pom.xml changes
+RUN ./mvnw dependency:go-offline -B
 
-# 4. Build the JAR using the Maven Wrapper
-RUN chmod +x mvnw && ./mvnw clean package -DskipTests
+# Copy source and build the JAR
+COPY src ./src
+RUN ./mvnw clean package -DskipTests
 
-# 5. Expose the port and start the application with memory limits
+# 2. Runtime Stage: Clean image with only necessary tools
+FROM eclipse-temurin:21-jdk-jammy
+WORKDIR /app
+
+# Install runtime dependencies (Git, Maven, Node.js) for PipelineEngine
+RUN apt-get update && apt-get install -y curl git maven \
+    && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && apt-get install -y nodejs \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# Copy only the built JAR from the build stage
+COPY --from=build /app/target/*.jar app.jar
+
+# Expose port and start with memory limits
 EXPOSE 8080
-ENTRYPOINT ["java", "-Xmx256m", "-Xms128m", "-jar", "target/backend-0.0.1-SNAPSHOT.jar"]
+ENTRYPOINT ["java", "-Xmx256m", "-Xms128m", "-jar", "app.jar"]
