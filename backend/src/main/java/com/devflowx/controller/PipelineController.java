@@ -14,7 +14,6 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/pipeline")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "http://localhost:5173")
 public class PipelineController {
 
     private final PipelineEngine pipelineEngine;

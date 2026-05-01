@@ -31,6 +31,9 @@ public class PipelineEngine {
     private final UserRepository userRepository;
     private final String WORKSPACE_BASE = "workspaces";
 
+    @org.springframework.beans.factory.annotation.Value("${VITE_API_BASE_URL:http://localhost:8080}")
+    private String backendUrl;
+
     @Async
     public void startPipeline(Release release) {
         String workspacePath = WORKSPACE_BASE + File.separator + "release-" + release.getId();
@@ -97,11 +100,11 @@ public class PipelineEngine {
                 auditLogService.log(release.getId(), "DEPLOY", "INFO", "Applying global path optimizations...");
                 patchAssetsRecursively(finalOutDir, baseUrl);
                 
-                release.setLiveUrl("http://localhost:8080" + baseUrl + "index.html");
+                release.setLiveUrl(backendUrl + baseUrl + "index.html");
             } else {
                 String workspacesAbsPath = new File("workspaces").getAbsolutePath();
                 String relativePath = buildDir.getAbsolutePath().substring(workspacesAbsPath.length() + 1);
-                release.setLiveUrl("http://localhost:8080/workspaces/" + relativePath.replace("\\", "/"));
+                release.setLiveUrl(backendUrl + "/workspaces/" + relativePath.replace("\\", "/"));
             }
             updateStatus(release, "DEPLOYED");
             auditLogService.log(release.getId(), "DEPLOY", "SUCCESS", "Deployment live at: /workspaces/release-" + release.getId() + "/index.html");

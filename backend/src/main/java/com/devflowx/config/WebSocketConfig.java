@@ -10,6 +10,9 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
 @EnableWebSocketMessageBroker
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
+    @org.springframework.beans.factory.annotation.Value("${CORS_ALLOWED_ORIGINS:http://localhost:5173}")
+    private String allowedOrigins;
+
     @Override
     public void configureMessageBroker(MessageBrokerRegistry config) {
         // Enable a simple memory-based message broker to carry the logs to the client
@@ -19,9 +22,9 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
-        // FIXED: Using addEndpoint and broad origin patterns for local development
+        String[] origins = allowedOrigins.split(",");
         registry.addEndpoint("/ws-logs")
-                .setAllowedOriginPatterns("http://localhost:*", "http://127.0.0.1:*")
+                .setAllowedOrigins(origins)
                 .withSockJS();
     }
 }
