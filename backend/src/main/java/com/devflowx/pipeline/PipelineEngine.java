@@ -184,12 +184,18 @@ public class PipelineEngine {
 
     private boolean executeBuild(Release release, File buildDir) {
         if ("MAVEN".equals(release.getProjectType())) {
-            return runCommand("mvn compile -DskipTests -am", buildDir, release, "BUILD");
+            // -B (Batch Mode) and -q (Quiet) speed up Maven by reducing console overhead
+            return runCommand("mvn compile -DskipTests -am -B -q", buildDir, release, "BUILD");
         } else if ("NODE".equals(release.getProjectType())) {
-            // Speed up npm install with flags
-            boolean ok = runCommand("npm install --prefer-offline --no-audit --no-fund --quiet", buildDir, release, "BUILD");
+            // Use 'npm ci' if lockfile exists (much faster in CI/CD), otherwise 'npm install'
+            boolean hasLockfile = new File(buildDir, "package-lock.json").exists();
+            String installCmd = hasLockfile 
+                ? "npm ci --prefer-offline --no-audit --no-fund --quiet" 
+                : "npm install --prefer-offline --no-audit --no-fund --quiet";
+            
+            boolean ok = runCommand(installCmd, buildDir, release, "BUILD");
             if (ok && hasNpmScript(new File(buildDir, "package.json"), "build")) {
-                return runCommand("npm run build", buildDir, release, "BUILD");
+                return runCommand("npm run build --quiet", buildDir, release, "BUILD");
             }
             return ok;
         }
