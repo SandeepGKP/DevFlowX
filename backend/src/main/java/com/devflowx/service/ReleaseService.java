@@ -29,6 +29,11 @@ public class ReleaseService {
     public void startPipeline(Long id) {
         Release release = releaseRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Release not found"));
+        
+        // Mark as QUEUED so user knows it's waiting for the background worker
+        release.setStatus("QUEUED");
+        releaseRepository.save(release);
+        
         pipelineEngine.startPipeline(release);
     }
 

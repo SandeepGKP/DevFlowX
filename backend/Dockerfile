@@ -14,6 +14,6 @@ COPY . .
 # 4. Build the JAR using the Maven Wrapper
 RUN chmod +x mvnw && ./mvnw clean package -DskipTests
 
-# 5. Expose the port and start the application
+# 5. Expose the port and start the application with memory limits
 EXPOSE 8080
-ENTRYPOINT ["java", "-jar", "target/backend-0.0.1-SNAPSHOT.jar"]
+ENTRYPOINT ["java", "-Xmx256m", "-Xms128m", "-jar", "target/backend-0.0.1-SNAPSHOT.jar"]

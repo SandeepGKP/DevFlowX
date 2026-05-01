@@ -38,7 +38,7 @@ public class PipelineEngine {
     @org.springframework.beans.factory.annotation.Value("${VITE_API_BASE_URL:http://localhost:8080}")
     private String backendUrl;
 
-    @Async
+    @Async("taskExecutor")
     public void startPipeline(Release release) {
         String workspacePath = WORKSPACE_BASE + File.separator + "release-" + release.getId();
         File workspaceRoot = new File(workspacePath);
@@ -278,6 +278,12 @@ public class PipelineEngine {
             builder.redirectErrorStream(true);
 
             Map<String, String> env = builder.environment();
+            
+            // MEMORY PROTECTION: Limit memory for child processes
+            // This prevents npm/mvn from hogging all system RAM
+            env.put("NODE_OPTIONS", "--max-old-space-size=256");
+            env.put("MAVEN_OPTS", "-Xmx256m -XX:MaxMetaspaceSize=128m");
+
             if (release.getEnvironmentVariables() != null) {
                 env.putAll(release.getEnvironmentVariables());
             }
