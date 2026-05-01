@@ -184,9 +184,10 @@ public class PipelineEngine {
 
     private boolean executeBuild(Release release, File buildDir) {
         if ("MAVEN".equals(release.getProjectType())) {
-            return runCommand("mvn clean compile", buildDir, release, "BUILD");
+            return runCommand("mvn compile -DskipTests -am", buildDir, release, "BUILD");
         } else if ("NODE".equals(release.getProjectType())) {
-            boolean ok = runCommand("npm install", buildDir, release, "BUILD");
+            // Speed up npm install with flags
+            boolean ok = runCommand("npm install --prefer-offline --no-audit --no-fund --quiet", buildDir, release, "BUILD");
             if (ok && hasNpmScript(new File(buildDir, "package.json"), "build")) {
                 return runCommand("npm run build", buildDir, release, "BUILD");
             }
@@ -322,13 +323,17 @@ public class PipelineEngine {
     private boolean performSecurityScan(File workspaceDir, Long releaseId) {
         auditLogService.log(releaseId, "SECURITY_SCAN", "INFO", "Intelligent secret detection started (skipping generated files)...");
         try (Stream<Path> paths = Files.walk(workspaceDir.toPath())) {
-            boolean found = paths.filter(Files::isRegularFile)
+            boolean found = paths.filter(p -> {
+                     // PRE-FILTER: Completely skip scanning these heavy directories
+                     String pathStr = p.toString();
+                     return !pathStr.contains("node_modules") && !pathStr.contains(".git");
+                 })
+                 .filter(Files::isRegularFile)
                  .filter(p -> {
                      String name = p.getFileName().toString().toLowerCase();
                      return !name.equals("readme.md") && !name.equals("license") && !name.equals(".gitignore") 
                             && !name.startsWith(".env") && !name.contains("template") && !name.contains("example")
-                            && !name.endsWith(".map") && !name.endsWith(".ico") && !name.endsWith(".png") && !name.endsWith(".jpg")
-                            && !p.toString().contains(".git") && !p.toString().contains("node_modules");
+                            && !name.endsWith(".map") && !name.endsWith(".ico") && !name.endsWith(".png") && !name.endsWith(".jpg");
                  })
                  .anyMatch(path -> {
                      try {
